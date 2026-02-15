@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Cutter Tool</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-block;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        .file-upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-info {
+            margin-top: 10px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #555;
+            display: none;
+        }
+
+        .file-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+
+        .file-info-label {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-hint {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .calculation-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .calculation-box h4 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .calculation-box p {
+            color: #555;
+            font-size: 0.9em;
+            margin: 5px 0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .process-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .process-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .process-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            display: none;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            display: none;
+        }
+
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-left: 4px solid #1976d2;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            color: #388e3c;
+            border-left: 4px solid #388e3c;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #d32f2f;
+            border-left: 4px solid #d32f2f;
+        }
+
+        .info-box {
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 6px;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 URL Cutter Tool</h1>
+        <p class="subtitle">Split your URLs into multiple files</p>
+
+        <div class="input-group">
+            <label>Upload Excel File (with URLs)</label>
+            <label for="file-input" class="file-upload-btn">
+                📁 Choose File
+            </label>
+            <input type="file" id="file-input" accept=".xlsx,.xls">
+            <div class="file-info" id="file-info">
+                <div class="file-info-row">
+                    <span class="file-info-label">File:</span>
+                    <span id="file-name-display">-</span>
+                </div>
+                <div class="file-info-row">
+                    <span class="file-info-label">Total URLs:</span>
+                    <span id="total-urls-display">-</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="chunk-size">URLs per Chunk (per file)</label>
+            <input type="number" id="chunk-size" placeholder="e.g., 2103" min="1">
+            
+            <div class="calculation-box" id="calculation-box">
+                <h4>📊 Calculation Preview:</h4>
+                <p><strong>Total Files:</strong> <span id="calc-files">-</span></p>
+                <p><strong>URLs Distribution:</strong> <span id="calc-distribution">-</span></p>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="zip-filename">ZIP Filename (optional)</label>
+            <input type="text" id="zip-filename" placeholder="e.g., my_urls">
+            <p class="input-hint">Leave empty to use default name "cut_urls.zip"</p>
+        </div>
+
+        <div class="button-group">
+            <button class="process-btn" id="process-btn" disabled>
+                Process & Generate Files
+            </button>
+            <button class="download-btn" id="download-btn">
+                📥 Download All Files (ZIP)
+            </button>
+        </div>
+
+        <div class="progress-bar" id="progress-bar">
+            <div class="progress-fill" id="progress-fill">0%</div>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <div class="info-box">
+            <h3>📋 How to use:</h3>
+            <ul>
+                <li>Upload an Excel file containing URLs (should be in column A)</li>
+                <li>Enter URLs per chunk (e.g., 2103 URLs per file)</li>
+                <li>Optionally customize the ZIP filename</li>
+                <li>Click "Process & Generate Files"</li>
+                <li>Download the ZIP file containing all Excel files</li>
+            </ul>
+            <br>
+            <p style="font-size: 0.85em; color: #888;">
+                <strong>Example:</strong> 10,515 URLs ÷ 2,103 per chunk = 5 files<br>
+                (Files 1-4 with 2,103 URLs each, File 5 with remaining 1,103 URLs)
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let allUrls = [];
+        let processedFiles = [];
+
+        // File input handling
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const data = new Uint8Array(event.target.result);
+                        const workbook = XLSX.read(data, {type: 'array'});
+                        
+                        // Get first sheet
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+                        
+                        // Extract URLs (assuming they're in first column)
+                        allUrls = jsonData
+                            .map(row => row[0])
+                            .filter(url => url && url.toString().trim() !== '' && url.toString().toLowerCase() !== 'url');
+                        
+                        document.getElementById('file-name-display').textContent = file.name;
+                        document.getElementById('total-urls-display').textContent = allUrls.length.toLocaleString();
+                        document.getElementById('file-info').style.display = 'block';
+                        
+                        showStatus(`✓ Successfully loaded ${allUrls.length.toLocaleString()} URLs from file`, 'success');
+                        
+                        // Enable calculation if chunk size is set
+                        const chunkSize = parseInt(document.getElementById('chunk-size').value);
+                        if (chunkSize > 0) {
+                            updateCalculation(chunkSize);
+                            document.getElementById('process-btn').disabled = false;
+                        }
+                    } catch (error) {
+                        showStatus('Error reading file: ' + error.message, 'error');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        // Chunk size input handling
+        document.getElementById('chunk-size').addEventListener('input', function() {
+            const chunkSize = parseInt(this.value);
+            if (chunkSize > 0 && allUrls.length > 0) {
+                updateCalculation(chunkSize);
+                document.getElementById('process-btn').disabled = false;
+            } else {
+                document.getElementById('calculation-box').style.display = 'none';
+                document.getElementById('process-btn').disabled = true;
+            }
+        });
+
+        function updateCalculation(chunkSize) {
+            const totalFiles = Math.ceil(allUrls.length / chunkSize);
+            const fullChunks = Math.floor(allUrls.length / chunkSize);
+            const remainder = allUrls.length % chunkSize;
+            
+            let distributionText = '';
+            if (remainder === 0) {
+                distributionText = `${totalFiles} files × ${chunkSize.toLocaleString()} URLs each`;
+            } else {
+                distributionText = `${fullChunks} files × ${chunkSize.toLocaleString()} URLs, ` +
+                                  `1 file × ${remainder.toLocaleString()} URLs`;
+            }
+            
+            document.getElementById('calc-files').textContent = totalFiles;
+            document.getElementById('calc-distribution').textContent = distributionText;
+            document.getElementById('calculation-box').style.display = 'block';
+        }
+
+        // Process button
+        document.getElementById('process-btn').addEventListener('click', function() {
+            const chunkSize = parseInt(document.getElementById('chunk-size').value);
+
+            if (!chunkSize || chunkSize <= 0) {
+                showStatus('Please enter a valid chunk size', 'error');
+                return;
+            }
+
+            if (allUrls.length === 0) {
+                showStatus('No URLs to process. Please upload a file first.', 'error');
+                return;
+            }
+
+            showStatus('<div class="loader"></div> Processing URLs and generating files...', 'info');
+            document.getElementById('progress-bar').style.display = 'block';
+            
+            // Process in a timeout to allow UI to update
+            setTimeout(() => {
+                processUrls(chunkSize);
+            }, 100);
+        });
+
+        // Download button
+        document.getElementById('download-btn').addEventListener('click', function() {
+            if (processedFiles.length > 0) {
+                downloadAllFiles();
+            }
+        });
+
+        function processUrls(chunkSize) {
+            try {
+                processedFiles = [];
+                
+                // Split URLs into chunks
+                const chunks = [];
+                for (let i = 0; i < allUrls.length; i += chunkSize) {
+                    chunks.push(allUrls.slice(i, i + chunkSize));
+                }
+
+                const totalChunks = chunks.length;
+
+                // Get custom filename or use default
+                let baseFilename = document.getElementById('zip-filename').value.trim();
+                
+                // Clean up filename (remove invalid characters)
+                if (baseFilename) {
+                    baseFilename = baseFilename.replace(/[^a-z0-9_\-]/gi, '_');
+                    baseFilename = baseFilename.replace(/\.zip$/i, '');
+                } else {
+                    baseFilename = 'cut_urls';
+                }
+
+                // Create a workbook for each chunk
+                chunks.forEach((chunk, index) => {
+                    const wb = XLSX.utils.book_new();
+                    
+                    // Create category_review sheet with only URLs in column A
+                    const categoryReviewData = [];
+                    chunk.forEach(url => {
+                        categoryReviewData.push([url]);
+                    });
+                    
+                    const categoryReviewSheet = XLSX.utils.aoa_to_sheet(categoryReviewData);
+                    
+                    // Set column widths for better visibility
+                    categoryReviewSheet['!cols'] = [
+                        { wch: 50 }  // Column A width
+                    ];
+                    
+                    XLSX.utils.book_append_sheet(wb, categoryReviewSheet, 'category_review');
+
+                    // Generate file using custom filename
+                    const startNum = (index * chunkSize) + 1;
+                    const endNum = Math.min((index + 1) * chunkSize, allUrls.length);
+                    const fileName = `${baseFilename}_${startNum}-${endNum}.xlsx`;
+                    
+                    processedFiles.push({
+                        name: fileName,
+                        workbook: wb
+                    });
+
+                    // Update progress
+                    const progress = Math.round(((index + 1) / totalChunks) * 100);
+                    document.getElementById('progress-fill').style.width = progress + '%';
+                    document.getElementById('progress-fill').textContent = progress + '%';
+                });
+
+                showStatus(
+                    `✓ Successfully generated ${processedFiles.length} Excel files! ` +
+                    `Click "Download All Files" to save them as a ZIP.`,
+                    'success'
+                );
+                
+                document.getElementById('download-btn').style.display = 'block';
+            } catch (error) {
+                showStatus('Error processing URLs: ' + error.message, 'error');
+                document.getElementById('progress-bar').style.display = 'none';
+            }
+        }
+
+        async function downloadAllFiles() {
+            try {
+                showStatus('<div class="loader"></div> Creating ZIP file...', 'info');
+                
+                const zip = new JSZip();
+                
+                // Add each Excel file to the ZIP
+                processedFiles.forEach(file => {
+                    const wbout = XLSX.write(file.workbook, {
+                        bookType: 'xlsx',
+                        type: 'array'
+                    });
+                    zip.file(file.name, wbout);
+                });
+
+                // Get custom filename or use default
+                let zipFilename = document.getElementById('zip-filename').value.trim();
+                
+                // Clean up filename (remove invalid characters)
+                if (zipFilename) {
+                    zipFilename = zipFilename.replace(/[^a-z0-9_\-]/gi, '_');
+                    // Ensure it doesn't end with .zip (we'll add it)
+                    zipFilename = zipFilename.replace(/\.zip$/i, '');
+                } else {
+                    zipFilename = 'cut_urls';
+                }
+                
+                // Add .zip extension
+                zipFilename += '.zip';
+
+                // Generate and download ZIP
+                const content = await zip.generateAsync({type: 'blob'});
+                saveAs(content, zipFilename);
+                
+                showStatus(`✓ All files downloaded successfully as "${zipFilename}"!`, 'success');
+            } catch (error) {
+                showStatus('Error creating ZIP file: ' + error.message, 'error');
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = message;
+            statusDiv.className = 'status ' + type;
+            statusDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
